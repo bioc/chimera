@@ -562,7 +562,7 @@ importFusionData <- function(format, filename, ...)
 	        #defining start1
             start1 <- report$donerEnd[i] - 60
             end1 <- report$donerEnd[i]
-            chr.tmp <- strsplit(as.character(report$chrom[i]),"_")
+            chr.tmp <- strsplit(as.character(report$chrom[i]),"_|~")
             chr1 <- chr.tmp[[1]][1]
 	        #junction2
 		    fs2 <- substr(as.character(report$fusion.junction[i]), 61, 120)
