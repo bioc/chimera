@@ -81,8 +81,9 @@ importFusionData <- function(format, filename, ...)
 		}
 		#creating object
 	 #   fusionreads.loc <- fusionreads.loc[[1]]            	
-	    fusionList <- list()
-	    for(i in 1:dim(report)[1]){
+	  fusionList <- list()
+	  for(i in 1:dim(report)[1]){
+		if(as.character(report$FusionJunctionSequence[i])!=""){		
 		 strand1 <- NULL
 		 strand2 <- NULL
 		 if(report$Strand[i] == as.character("++")) {strand1 <- "+"; strand2 <- "+"}
@@ -92,45 +93,8 @@ importFusionData <- function(format, filename, ...)
 
 		 fs.tmp <- strsplit(as.character(report$FusionJunctionSequence[i]),"[a-z]")
 		 fs.1 <- fs.tmp[[1]][1]
-#this part of the code was used to see if any inconsistence exists between output of the finder and the genome used in the analysis
-#		 inconsistence <- ""
-#		 if(org=="hs"){
-#			grG1.tmp <-  GRanges(seqnames = paste("chr",report$Chromosome1[i],sep=""),
-#			            ranges = IRanges(start = (report$Position1[i] - 5000), end= (report$Position1[i] + 5000)))
-#		    seq1.tmp <- getSeq(Hsapiens, grG1.tmp)
-#		    align1.tmpr <- pairwiseAlignment(seq1.tmp,reverseComplement(DNAString(fs.1)), type = "local")
-#		    align1.tmp <- pairwiseAlignment(seq1.tmp,DNAString(fs.1), type = "local")
-#		    if(nchar(pattern(align1.tmp)) == nchar(fs.1)){
-#			      g1.end <- (report$Position1[i] - 5000) + start(pattern(align1.tmp))
-#		    }else if(nchar(pattern(align1.tmpr)) == nchar(fs.1)){
-#			      g1.end <- (report$Position1[i] - 5000) + start(pattern(align1.tmpr))
-#		    }else{
-#			     cat("\nThere is inconsistence between the sequence detected as gene1 end and the hg19 sequence\n
-#			             A * will be added near the gene1 name to remind this criticality")
-#			     inconsistence <- "*"
-#		    }
-#		 }
 		 fs.tmp <- strsplit(as.character(report$FusionJunctionSequence[i]),"[A-Z]")
 		 fs.2 <- fs.tmp[[1]][length(fs.tmp[[1]])]
-#this part of the code was used to see if any inconsistence exists between output of the finder and the genome used in the analysis
-#		 inconsistence <- ""
-#		 if(org=="hs"){
-#			grG2.tmp <-  GRanges(seqnames = paste("chr",report$Chromosome2[i],sep=""),
-#						ranges = IRanges(start = (report$Position2[i] - 5000), end= (report$Position2[i] + 5000)))
-#			seq2.tmp <- getSeq(Hsapiens, grG2.tmp)
-#			align2.tmpr <- pairwiseAlignment(seq2.tmp,reverseComplement(DNAString(fs.2)), type = "local")
-#			align2.tmp <- pairwiseAlignment(seq2.tmp,DNAString(fs.2), type = "local")
-#			if(nchar(pattern(align2.tmp)) == nchar(fs.2)){
-#						g2.start <- (report$Position2[i] - 5000) + start(pattern(align2.tmp))
-#			}else if(nchar(pattern(align2.tmpr)) == nchar(fs.2)){
-#						g2.start <- (report$Position2[i] - 5000) + start(pattern(align2.tmpr))
-#			}else{
-#					    cat("\nThere is inconsistence between the sequence detected as gene2 start and the hg19 sequence\n
-#						             A * will be added near the gene2 name to remind this criticality")
-#					inconsistence <- "*"
-#		    }
-#		 }
-		
 		 #detecting genes involved in fusions
 		
          grG1 <-  GRanges(seqnames = paste("chr",report$Chromosome1[i],sep=""),
@@ -211,7 +175,8 @@ importFusionData <- function(format, filename, ...)
 		                                 frameShift=as.character(report$FrameShift[i])
 		)
 		fusionList[[i]] <- new("fSet",fusionInfo=fusionData,fusionLoc=grl, fusionRNA=new("DNAStringSet"))		             
-	   }
+     }
+	}
 	   return(fusionList)
 }
 
