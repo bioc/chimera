@@ -159,18 +159,26 @@ supportingReads <- function(list, fusion.reads=c("all","spanning"), parallel=FAL
          p <- MulticoreParam()
          if(fusion.reads=="all"){
                 nsr <- bplapply(tmp, function(x) x@fusionInfo$RescuedCount, BPPARAM=p)
+				length.nsr <- sapply(nsr, length)
+                nsr[which(length.nsr == 0)] <- 0
                 nsr <- as.numeric(unlist(nsr))
          }else if(fusion.reads=="spanning"){
 	            nsr <- bplapply(tmp, function(x) x@fusionInfo$SeedCount, BPPARAM=p)
+				length.nsr <- sapply(nsr, length)
+                nsr[which(length.nsr == 0)] <- 0
 	            nsr <- as.numeric(unlist(nsr))
 	     }
     }else{
-	    if(fusion.reads=="all"){ 
+	    if(fusion.reads=="all"){
                 nsr <- sapply(tmp, function(x) x@fusionInfo$RescuedCount)
-		        nsr <- as.numeric(nsr)
+				length.nsr <- sapply(nsr, length)
+                nsr[which(length.nsr == 0)] <- 0
+				nsr <- as.numeric(unlist(nsr))
 	    }else if(fusion.reads=="spanning"){ 
 			    nsr <- sapply(tmp, function(x) x@fusionInfo$SeedCount)
-			    nsr <- as.numeric(nsr)
+				length.nsr <- sapply(nsr, length)
+                nsr[which(length.nsr == 0)] <- 0
+				nsr <- as.numeric(unlist(nsr))
 	    }
     }
 	return(nsr)	
@@ -267,6 +275,103 @@ filterSamReads <- function(input, output, filter=c("includeAligned","excludeAlig
 	return(output)
 }
 ##
+prettyPrint <- function(list, filename, fusion.reads=c("all","spanning")){
+	all <- supportingReads(list, fusion.reads, parallel=FALSE)
+    fusions.des <- sapply(list, function(x){
+        chr.1 <- as.character(seqnames(fusionGRL(x)$gene1))
+        chr.2 <- as.character(seqnames(fusionGRL(x)$gene2))
+        end.1 <- end(fusionGRL(x)$gene1)
+        strand.1 <- strand(fusionGRL(x)$gene1)
+        start.2 <- start(fusionGRL(x)$gene2)
+        strand.2 <- strand(fusionGRL(x)$gene2)
+        gene1 <- elementMetadata(fusionGRL(x)$gene1)$KnownGene
+        gene2 <- elementMetadata(fusionGRL(x)$gene2)$KnownGene
+        trs1 <- elementMetadata(fusionGRL(x)$gene1)$KnownTranscript
+        trs2 <- elementMetadata(fusionGRL(x)$gene2)$KnownTranscript
+        junction1 <- elementMetadata(fusionGRL(x)$gene1)$FusionJunctionSequence
+        junction2 <- elementMetadata(fusionGRL(x)$gene2)$FusionJunctionSequence
+        junction <- paste(junction1, junction2, sep="")
+        tmp <- paste(gene1, chr.1, end.1, strand.1, trs1, gene2, chr.2, start.2, strand.2, trs2, junction, sep="|")
+    })
+    fusions.des <- strsplit(fusions.des, "\\|")
+    fusions.des <- as.data.frame(fusions.des)
+    dimnames(fusions.des)[[1]] <-   c("gene1","chr.gene1","breakpoint.gene1", "strand.gene1","transcripts.gene1","gene2","chr.gene2","breakpoint.gene2","strand.gene2","transcripts.gene2","fusion.breakpoint")
+    fusions.des <- t(fusions.des)
+    fusions.des <- cbind(fusions.des, all)
+    dimnames(fusions.des)[[2]] <- c("gene1","chr.gene1","breakpoint.gene1", "strand.gene1","transcripts.gene1","gene2","chr.gene2","breakpoint.gene2","strand.gene2","transcripts.gene2","fusion.breakpoint","supporting.reads")
+    write.table(fusions.des, filename, sep="\t", row.names=F)
+    return(paste("Fusion information is saved in ", filename, sep=""))
+}
+
+##
+bam2fastq<- function(bam, filename="ready4gapfiller", ref,parallel=FALSE){
+    bam <- scanBam(bam)
+    tmp <- which(as.character(bam[[1]]$rname) == ref)
+    seq <- as.character(bam[[1]]$seq[tmp])
+    qual <- as.character(bam[[1]]$qual[tmp])
+    read.n <- as.character(bam[[1]]$qname[tmp])
+    names(seq) <- read.n 
+    names(qual) <- read.n 
+    seq <- seq[order(names(seq))]
+    qual <- qual[order(names(qual))]
+    rname.u <- unique(names(seq))
+    if(parallel){
+ 	     require(BiocParallel) || stop("\nMission BiocParallel library\n")
+          p <- MulticoreParam()
+          paired <- bplapply(rname.u, function(x,y){
+   	          if(length(which(y==x)) == 2){
+   	         	return(paste(which(y==x),sep=" "))
+   	          }else{
+   	        	return(NA)
+   	          }
+          }, y=names(seq), BPPARAM=p)
+		  
+    }else{
+       paired <- sapply(rname.u, function(x,y){
+	       if(length(which(y==x)) == 2){
+	         	return(paste(which(y==x),sep=" "))
+	       }else{
+	        	return(NA)
+	       }
+       }, y=names(seq))
+   }
+	
+    paired <- paired[!is.na(paired)]
+    paired <- as.data.frame(paired)
+    paired1 <-as.numeric(as.character(unlist(paired[1,])))
+    paired2 <-as.numeric(as.character(unlist(paired[2,])))
+
+    fastq1 <- rep(NA, (length(paired1) * 4))
+    fastq1[seq(1, length(fastq1),by=4)] <- paste("@",names(seq)[paired1], sep="")
+    fastq1[seq(2, length(fastq1),by=4)] <- seq[paired1]
+    fastq1[seq(3, length(fastq1),by=4)] <- rep("+", length(seq[paired1]))
+    fastq1[seq(4, length(fastq1),by=4)] <- qual[paired1]
+    writeLines(fastq1, paste(filename,"_R1.fastq",sep=""))
+
+    fastq2 <- rep(NA, (length(paired2) * 4))
+    fastq2[seq(1, length(fastq2),by=4)] <- paste("@",names(seq)[paired2], sep="")
+    fastq2[seq(2, length(fastq2),by=4)] <- seq[paired2]
+    fastq2[seq(3, length(fastq2),by=4)] <- rep("+", length(seq[paired2]))
+    fastq2[seq(4, length(fastq2),by=4)] <- qual[paired2]
+    writeLines(fastq2, paste(filename,"_R2.fastq",sep=""))
+}
+##
+MHmakeRandomString <- function()
+{
+    n <- 1
+	lenght <- 12
+	randomString <- c(1:n)                  # initialize vector
+    for (i in 1:n)
+    {
+        randomString[i] <- paste(sample(c(0:9, letters, LETTERS),
+                                 lenght, replace=TRUE),
+                                 collapse="")
+    }
+    return(randomString)
+}
+
+
+
 
 
 
