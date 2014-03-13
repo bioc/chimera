@@ -1256,9 +1256,15 @@ importFusionData <- function(format, filename, ...)
             r2.gr <- GRanges(seqnames = as.character(report$gene2.chr), 
                               ranges = IRanges(start = as.numeric(report$first.aligned.read2), 
                               end= as.numeric(report$first.aligned.read2)),  cigar=as.character(report$read2.cigar), junction.type=as.numeric(report$junction.type))
+		    #the encompassing chimeric reads are marked with -1 in column junction.type, 
+		    #while spanning reads are marked with 0 for non-GT/AG introns, 1-GT/AG, 2-CT/AC.
             spanning <- which(elementMetadata(r1.gr)$junction.type != -1)
-			r1r2.span <- setdiff(seq(1,length(r1.gr)), spanning) #location of spanning reads
-			###da qui			
+			if(length(spanning)==0){
+				cat("\nThe input file does not have any spanning read.\nYour fusion lacking of spanning reads are most probably artifacts\nThe analysis of fusions lacking spanning reads is not supported.\n")
+                return()
+			}
+			#r1r2.span <- setdiff(seq(1,length(r1.gr)), spanning) #erroneusly location of encompassing reads instead of spanning
+			r1r2.span <- spanning
             
             tmp.loc1 <- paste(as.character(report[,1]),report[,2],as.character(report[,3]), sep=":")
             tmp.loc2 <- paste(as.character(report[,4]),report[,5],as.character(report[,6]), sep=":")
@@ -1266,29 +1272,25 @@ importFusionData <- function(format, filename, ...)
             tmp.loc.span <-  tmp.loc[r1r2.span]
             tmp.loc1 <- NULL
             tmp.loc2 <- NULL
-            # the function discard fusions supported by a single read
+            # the function discard duplicated fusions 
             tmp.loc1 <- tmp.loc[duplicated(tmp.loc)]
-            tmp.loc.u <- unique(tmp.loc1)
-            #da rivedere non so se è giusto farlo
-            tmp.loc.u.span <- intersect(tmp.loc.u, tmp.loc.span)
-            ###nel senso che mi butta via parecchia roba
-            #the encompassing chimeric reads are marked with -1 in column junction.type, 
-            #while spanning reads are marked with 0 for non-GT/AG introns, 1-GT/AG, 2-CT/AC.
+			tmp.loc1 <- unique(tmp.loc1)
+			tmp.loc1 <- c(tmp.loc1, tmp.loc[!duplicated(tmp.loc)])
+			tmp.loc.u <- unique(tmp.loc1)
+			tmp.loc.u.span <- unique(tmp.loc.span)
             if(parallel){
 	             tmp.loc.counts <- bplapply(tmp.loc.u, function(x,y) length(which(y==x)), y=tmp.loc1, BPPARAM=p)
 	             tmp.loc.counts <- as.numeric(unlist(tmp.loc.counts))
 	            #spanning
-	             tmp.loc.counts.span <- bplapply(tmp.loc.u.span, function(x,y) length(which(y==x)), y=tmp.loc1, BPPARAM=p)
-	             tmp.loc.counts.span <- as.numeric(unlist(tmp.loc.counts.span))
-
+	                tmp.loc.counts.span <- bplapply(tmp.loc.u.span, function(x,y) length(which(y==x)), y=tmp.loc1, BPPARAM=p)
+	                tmp.loc.counts.span <- as.numeric(unlist(tmp.loc.counts.span))
 	        }else{ 
                  tmp.loc.counts <- lapply(tmp.loc.u,function(x,y) length(which(y==x)), y=tmp.loc1)
                  tmp.loc.counts <- as.numeric(unlist(tmp.loc.counts))
 	            #spanning
-                 tmp.loc.counts.span <- lapply(tmp.loc.u.span,function(x,y) length(which(y==x)), y=tmp.loc1)
-                 tmp.loc.counts.span <- as.numeric(unlist(tmp.loc.counts.span))
+                   tmp.loc.counts.span <- lapply(tmp.loc.u.span,function(x,y) length(which(y==x)), y=tmp.loc1)
+                   tmp.loc.counts.span <- as.numeric(unlist(tmp.loc.counts.span))
             }
-
             #at this point I have the supporting number of reads for fusions supported by more than one read
             if(length(hist.file)>0){
 	               pdf("hist")
@@ -1303,17 +1305,9 @@ importFusionData <- function(format, filename, ...)
            #spanning
             names(tmp.loc.counts.span) <- tmp.loc.u.span
             tmp.loc.counts.span <- tmp.loc.counts.span[which(names(tmp.loc.counts.span)%in%names(tmp.loc.counts))]
-
             tmp.loc.counts <- paste(names(tmp.loc.counts), tmp.loc.counts, sep="_")
-    #        mt <- grep("MT:", tmp.loc.counts)
-    #        tmp.loc.counts <- tmp.loc.counts[setdiff(seq(1, length(tmp.loc.counts)),mt)]
-            
             tmp.loc.counts.span <- paste(names(tmp.loc.counts.span), tmp.loc.counts.span, sep="_")
-   #         mt <- grep("MT:", tmp.loc.counts.span)
-   #         tmp.loc.counts.span <- tmp.loc.counts.span[setdiff(seq(1, length(tmp.loc.counts.span)),mt)]
 
-
-		#	fusionreads.loc <- new("GAlignments")
 		    #loading annotation
 		if(org=="hs"){
 			chr.tmps <- as.list(org.Hs.egCHRLOC)
@@ -1376,12 +1370,14 @@ importFusionData <- function(format, filename, ...)
 		             names.all <- fusionName(fusionList, parallel=T)
 		             which.all <- which(names.all %in% names.span)
                  }else{
-	                 fusionList.span <- fusionList
-	                 counts.span <- rep(0, length(fusionList.span))
-		             names.span <- fusionName(fusionList.span, parallel=T)
-		             names(counts.span) <- names.span
-		             names.all <- fusionName(fusionList, parallel=T)
-		             which.all <- which(names.all %in% names.span)
+					 cat("\nThe data you have imputed do not contain any spanning read\nBe aware that those fusions might be false positives\nThe analysis of fusions lacking spanning reads is not supported.\n")
+					 return()
+	             #    fusionList.span <- fusionList
+	             #    counts.span <- rep(0, length(fusionList.span))
+		         #    names.span <- fusionName(fusionList.span, parallel=T)
+		         #    names(counts.span) <- names.span
+		         #    names.all <- fusionName(fusionList, parallel=T)
+		         #    which.all <- which(names.all %in% names.span)
                  }
 	             #for test purposes
     #            save(tmp.loc.counts,tmp.loc.counts.span,fusionList, fusionList.span, counts.span, names.all, which.all, file="tmp.test.rda")
@@ -1415,12 +1411,14 @@ importFusionData <- function(format, filename, ...)
 		             names.all <- fusionName(fusionList, parallel=F)
 		             which.all <- which(names.all %in% names.span)
                  }else{
-	                 fusionList.span <- fusionList
-	                 counts.span <- rep(0, length(fusionList.span))
-		             names.span <- fusionName(fusionList.span, parallel=F)
-		             names(counts.span) <- names.span
-		             names.all <- fusionName(fusionList, parallel=F)
-		             which.all <- which(names.all %in% names.span)
+					 cat("\nThe data you have imputed do not contain any spanning read\nBe aware that those fusions might be false positives\nThe analysis of fusions lacking spanning reads is not supported.\n")
+					 return()
+	                # fusionList.span <- fusionList
+	                # counts.span <- rep(0, length(fusionList.span))
+		            # names.span <- fusionName(fusionList.span, parallel=F)
+		            # names(counts.span) <- names.span
+		            # names.all <- fusionName(fusionList, parallel=F)
+		            # which.all <- which(names.all %in% names.span)
                  }
 	             #for test purposes
    #            save(tmp.loc.counts,tmp.loc.counts.span,fusionList, fusionList.span, counts.span, names.all, which.all, file="tmp.test.rda")
