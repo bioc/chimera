@@ -120,10 +120,10 @@ filterList <- function(x,type=c("supporting.reads","fusion.names", "intronic", "
   tmp.name <- as.character(elementMetadata(eg.trs.n)$tx_name)
   tmp.gene1 <- NULL
   for(i in 1:length(tmp.tx)){
-		tmp.seq <- .buildFusion(type="donor.end", grl, tmp.tx[i])
+		tmp.seq <- .onlyExons(type="donor.end", grl, tmp.tx[i])
         tmp.gene1 <- c(tmp.gene1, tmp.seq$seq)
         if(!is.na(tmp.seq$intron.location)){
-	           return(1)
+	           return(0)#junction in an exon
         }
   }
   names(tmp.gene1) <- tmp.name
@@ -138,15 +138,14 @@ filterList <- function(x,type=c("supporting.reads","fusion.names", "intronic", "
   tmp.name <- as.character(elementMetadata(eg.trs.n)$tx_name)
   tmp.gene2 <- NULL
   for(i in 1:length(tmp.tx)){
-		  tmp.seq <- .buildFusion(type="acceptor.start", grl, tmp.tx[i])
+		  tmp.seq <- .onlyExons(type="acceptor.start", grl, tmp.tx[i])
           tmp.gene2 <- c(tmp.gene2, tmp.seq$seq)
           if(!is.na(tmp.seq$intron.location)){
-	           return(1)
+	           return(0)#junction in an exon
         }
   }
-  return(0)
+  return(1)#junction in an intron
 }
-
 
 
 
