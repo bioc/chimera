@@ -311,7 +311,7 @@ $STAR_FOLDER/STARstatic --genomeDir $STAR_GENOME --readFilesIn $FASTQ1 $FASTQ2 -
 ##STEP2: On the unmapped fastq generated from STAR mapping script (above)
 library(Rsubread)
 subjunc("/home/calogero/bin/genome/rsubread.hg19/hg19", "spike4_Unmapped.out.mate1", "spike4_Unmapped.out.mate2", output_file="spike4_subread.bam", output_format="BAM",nthreads=64,reportAllJunctions=TRUE)
- tmp <- importFusionData("rsubread","spike4_subread.bam.fusion.txt", org="hs", min.support=10)
+tmp <- importFusionData("rsubread","spike4_subread.bam.fusion.txt", org="hs", min.support=2, parallel=T)
 
 ##STEP3: Importing fusions in R
 tmp <- importFusionData("rsubread","spike4_subread.bam.fusion.txt", org="hs", min.support=10)
