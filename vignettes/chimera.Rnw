@@ -1,6 +1,6 @@
 %\VignetteIndexEntry{chimera}
 %\VignetteDepends{}
-%\VignetteKeywords{chimera, fusion-product, RNA-seq, bellerophontes, deFuse, FusionFinder, FusionHunter, mapSplice, tophat-fusion, FusionMap}
+%\VignetteKeywords{chimera, fusion-product, RNA-seq, bellerophontes, deFuse, FusionFinder, FusionHunter, mapSplice, tophat-fusion, FusionMap, STAR Rsubread}
 %\VignettePackage{chimera}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \documentclass[12pt]{article}
