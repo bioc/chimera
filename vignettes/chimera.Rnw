@@ -19,7 +19,7 @@
 \begin{document}
 \title{Chimera}
 \author{Raffaele A Calogero, Matteo Carrara, Marco Beccuti, Francesca Cordero}
-\date{May 3 2014}
+\date{August 1 2014}
 \maketitle
 
 \section{Introduction}
@@ -338,9 +338,11 @@ tmp <- importFusionData("rsubread","spike4_subread.bam.fusion.txt", org="hs", mi
  
 
 \section{example}
-In the following table are shown the data obtained by various fusion detection tools, default parameters, on the datasets published by Edgen. The different cell lines fastq were combined in a unique  fastq to generate the benchmark dataset.
+In the following table are shown the data obtained, during chimera development, using some of the fusion detection tools supported by chimera , on the datasets published by Edgen. The different cell lines fastq were combined in a unique  fastq to generate the benchmark dataset and runs were done using default parameters.
 <<>>==
-read.table(paste(find.package(package="chimera"),"/examples/edgren.stat.detection.txt",sep=""), sep="\t", header=T)
+library(xtable)
+tp <- read.table(paste(find.package(package="chimera"),"/examples/edgren.stat.detection.txt",sep=""), sep="\t", header=T)
+print(xtable(tp, caption = 'Edgren validated fusions discovered by tools supported by chimera'))
 @
 Further comparison results are available at  \url{https://code.google.com/p/fusioncatcher/wiki/comparison} 
 The package comes with a set of data, present in the example folder, representing all the information needed to create an fSet object for the fusion SULF2:ARFGEF2 detected by FusionMap in the MCF7 dataset published by Edgren et al. Genome Biology 2011, 12:R6.
