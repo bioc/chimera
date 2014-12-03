@@ -10,3 +10,7 @@ import(org.Hs.eg.db)
 export(plotCoverage)
 export(is.fSet)
 exportPattern("^[[:alpha:]]+")
+useDynLib("chimera")
+
+
+
