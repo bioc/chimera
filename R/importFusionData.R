@@ -5,6 +5,7 @@
 #.fhImport imports fusions from FusionHunter
 #.msImport imports fusions from MapSplice
 #.thfImport imports fusions from TopHat-fusion
+#.thfPostImport imports fusions from TopHat-fusion post
 #.dfImport imports fusions from deFuse
 #.starImport imports fusions from star
 #.starFset creat fset from star data
@@ -28,6 +29,7 @@ importFusionData <- function(format, filename, ...)
            "fusionhunter" = .fhImport(filename),
 	       "mapsplice" = .msImport(filename),
 	       "tophat-fusion" = .thfImport(filename),
+		   "tophat-fusion-post" = .thfPostImport(filename),
 	       "chimerascan" = .csImport(filename, ...),
            "fusionmap" = .fmImport(filename, ...),
            "star" = .starImport(filename, ...),
@@ -597,6 +599,133 @@ importFusionData <- function(format, filename, ...)
         }
 	   return(fusionList)
 }
+
+
+#tophat-fusion import
+.thfPostImport <- function(fusion.report){
+	    report <- read.table(fusion.report, sep="\t", header=F)
+	    if(dim(report)[2]!=11){
+		    cat("\nThe data structure does not seem to be that of tophat-fusion-post file\n")
+		    return()
+	    }
+	    names(report) <- c("SampleName","gene1", "gene1.chr", "gene1.fusion.loc", "gene2","gene2.chr","gene2.fusion.loc",
+		"spanning","encompassing", "encompassing.w.spanning","other")
+	#    fusionreads.loc <- new("GAlignments") 
+        #KnownGene1
+        g1 <- NA
+		#KnownGene2
+        g2 <- NA
+        #KnownTranscript1
+        t1 <- NA
+        #KnownTranscript2
+        t2 <- NA
+        #KnownExonNumber1
+        e1 <- NA
+        #KnownExonNumber2
+        e2 <- NA
+        #KnownTranscriptStrand1
+        ts1 <- NA
+        #KnownTranscriptStrand2
+        ts2 <- NA
+        #FusionJunctionSequence1-2
+        #SeedCount1-2
+        #UniqueCuttingPositionCount
+        cut <- 0
+        #SplicePattern
+        sp <- "-"
+        #frameShift
+        fs <- "-"
+        #creating objects
+        fusionList <- list()
+        #loading annotation
+        chr.tmps <- as.list(org.Hs.egCHRLOC)
+        chr.tmps <- chr.tmps[!is.na(chr.tmps)]
+        eg.start <- names(chr.tmps)
+        chr.start <- sapply(chr.tmps, function(x)x[1])
+        chr.strand <- rep("+", length(chr.start))
+        chr.strand[which(chr.start < 0)] <- "-"
+        chr.start <- abs(chr.start)
+        chr.tmpc <- sapply(chr.tmps, function(x)names(x[1]))
+        chr <- paste("chr", chr.tmpc, sep="")
+        chr.tmpe <- as.list(org.Hs.egCHRLOCEND)
+        chr.tmpe <- chr.tmpe[!is.na(chr.tmpe)]
+        eg.end <- names(chr.tmpe)
+        chr.end <- sapply(chr.tmpe, function(x)x[1])
+        chr.end <- abs(chr.end)
+        chr.sym <- as.list(org.Hs.egSYMBOL)
+        chr.sym <- chr.sym[which(names(chr.sym)%in%eg.start)]
+        #identical(names(chr.sym),eg.start)
+#       grHs <- GRanges(seqnames = chr, ranges = IRanges(start = chr.start, end= chr.end), strand = chr.strand, EG=eg.start)
+        grHs <- GRanges(seqnames = chr, ranges = IRanges(start = chr.start, end= chr.end),  EG=eg.start)
+
+        mychrs <- unique(as.character(seqnames(grHs)))
+        mychrs <- mychrs[1:24]
+        grHs <- grHs[which(as.character(seqnames(grHs))%in%mychrs)]
+        for(i in 1:dim(report)[1]){
+	     #   cat("\n",i)
+	        strand1 <- NULL
+		    strand2 <- NULL
+            #spanning reads		 
+	        seed1 <- report$encompassing.w.spanning[i]
+	        #RescuedCount encompassing.reads
+	        rc <- report$encompassing[i]
+	        #pos.tmp <- strsplit(as.character(report$chrs.fusion[i]), "-")
+	        #junction sequence1
+	        fs1 <- ""
+	        #defining start1
+	        #coverage1.tmp <- strsplit(as.character(report$coverage1[i]), " ")
+            start1 <- report$gene1.fusion.loc[i] - 30
+            end1 <- report$gene1.fusion.loc[i]
+            chr1 <- as.character(report$gene1.chr[i])
+	        #junction2
+		    fs2 <- ""
+		    #defining start2
+		    #coverage2.tmp <- strsplit(as.character(report$coverage2[i]), " ")
+	        start2 <- report$gene2.fusion.loc[i]
+            end2 <- report$gene2.fusion.loc[i] + 30
+            chr2 <- as.character(report$gene2.chr[i])
+            #defining gene1
+            grG1 <-  GRanges(seqnames = chr1, ranges = IRanges(start = start1, end= end1))
+            grG2 <-  GRanges(seqnames = chr2, ranges = IRanges(start = start2, end= end2))
+            tmpG1 <- findOverlaps(grG1, grHs, type = "any", select = "first", ignore.strand = T)
+            if(!is.na(tmpG1)){
+                g1 <- chr.sym[which(names(chr.sym) == elementMetadata(grHs[tmpG1])$EG)]	            	
+            }else{g1 <- paste(seqnames(grG1), paste(start(grG1),end(grG1), sep="-"),sep=":")}
+            tmpG2 <- findOverlaps(grG2, grHs, type = "any", select = "first", ignore.strand = T)
+            if(!is.na(tmpG2)){
+                g2 <- chr.sym[which(names(chr.sym) == elementMetadata(grHs[tmpG2])$EG)]	            	
+            }else{g2 <- paste(seqnames(grG2), paste(start(grG2),end(grG2), sep="-"),sep=":")}
+
+            gr1 <- GRanges(seqnames = chr1,
+			            ranges = IRanges(start = start1, end= end1),
+			         #   strand = strand1,
+			            KnownGene = as.character(g1),
+			            KnownTranscript =  t1,
+			            KnownExonNumber = e1,
+			            KnownTranscriptStrand = ts1,
+			            FusionJunctionSequence =  fs1)
+		     gr2 <- GRanges(seqnames = chr2,
+					   ranges = IRanges(start = start2, end= end2),
+				#	   strand = strand2,
+					   KnownGene = as.character(g2),
+					   KnownTranscript =  t2,
+					   KnownExonNumber = e2,
+					   KnownTranscriptStrand = ts2,
+					   FusionJunctionSequence =  fs2)
+			grl <- GRangesList("gene1" = gr1, "gene2" = gr2)
+			fusionData <- new("list", fusionTool="TopHat-fusion", 
+			                                 UniqueCuttingPositionCount=cut, 
+			                                 SeedCount=seed1, 
+			                                 RescuedCount=rc, 
+			                                 SplicePattern=sp,
+			                                 FusionGene=paste(g1,g2, sep="->"),
+			                                 frameShift=fs
+			)
+			fusionList[[i]] <- new("fSet",fusionInfo=fusionData,fusionLoc=grl, fusionRNA=new("DNAStringSet"))
+        }
+	   return(fusionList)
+}
+
 
 .msImport <- function(fusion.report){
 	    flankcase.description <- seq(0,6)
