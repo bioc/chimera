@@ -23,7 +23,7 @@ IMPORTANT: please note that the it is important that the genome reference versio
     #download Edgren Chimeric.out.junction. This file encompass the results obtaines combined all cell lines used in Edgren experiment 
     #download.file("http://sourceforge.net/projects/ochguiextras/files/chimera/Chimeric.out.junction.zip/download", "Chimeric.out.junction.zip", mode="wb")
     #unzip("Chimeric.out.junction.zip")
-    #tmp <- importFusionData("star", "Chimeric.out.junction", org="hs", parallel=T, hist.file=NULL, min.support=100)
+    #tmp <- importFusionData("star", "Chimeric.out.junction", org="hs", min.support=100)
 }
 \keyword{utilities}
 

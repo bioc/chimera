@@ -1533,6 +1533,10 @@ importFusionData <- function(format, filename, ...)
 		    #while spanning reads are marked with 0 for non-GT/AG introns, 1-GT/AG, 2-CT/AC.
 			
             report <- report[which(report$n.spanning >= min.support),]
+            if(dim(report)[1] == 0){
+				cat("\nThe input file does not seems to have any fusion.\nPlease contact the developers.\n")
+                return()
+			}
             if(sum(report$n.spanning) == 0){
 				cat("\nThe input file does not have any spanning read.\nYour fusion lacking of spanning reads are most probably artifacts\nThe analysis of fusions lacking spanning reads is not supported.\n")
                 return()
