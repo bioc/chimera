@@ -115,7 +115,7 @@ chimeraSeqs <- function(fset, extend=1000, type="transcripts"){
              }
              names(tmp.gene1) <- tmp.name #list of seqs
 
-             grl2 <- new("GRangesList")
+             grl2 <- GRangesList()
 	         cat("\nAcceptor gene start does not fit the expected start on the detected fusion\nFusion is located outside gene exons. Fusion sequence is assembled using:")
              end(grl[[2]]) <- end(grl[[2]]) + extend
              cat(paste(as.character(seqnames(grl[[2]])), sep=":",paste(start(grl[[2]]), end(grl[[2]]),sep="-")),"\n")
@@ -145,7 +145,7 @@ chimeraSeqs <- function(fset, extend=1000, type="transcripts"){
               names(fusions) <- fusions.names
 	          return(fusions)
 	     }else if(tmp == 1) {
-	       grl1 <- new("GRangesList")
+	       grl1 <- GRangesList()
 	       cat("\nDonor gene end does not fit the expected end on the detected fusion.\nFusion is located outside gene exons. Fusion sequence is assembled using:")
            start(grl[[1]]) <- start(grl[[1]]) - extend
            cat(paste(as.character(seqnames(grl[[1]])), sep=":",paste(start(grl[[1]]), end(grl[[1]]),sep="-")),"\n")
@@ -197,7 +197,7 @@ chimeraSeqs <- function(fset, extend=1000, type="transcripts"){
 	 }
    }else if(length(chimera.tmp[[1]])==4){
 	    if(type=="transcripts"){
-	       grl1 <- new("GRangesList")
+	       grl1 <- GRangesList()
 	       cat("\nDonor gene end does not fit the expected end on the detected fusion.\nFusion is located outside gene exons. Fusion sequence is assembled using:")
            start(grl[[1]]) <- start(grl[[1]]) - extend
            cat(paste(as.character(seqnames(grl[[1]])), sep=":",paste(start(grl[[1]]), end(grl[[1]]),sep="-")),"\n")
@@ -217,7 +217,7 @@ chimeraSeqs <- function(fset, extend=1000, type="transcripts"){
            }
            names(donorGeneList) <- names(grl1)
 #
-           grl2 <- new("GRangesList")
+           grl2 <- GRangesList()
 	       cat("\nAcceptor gene start does not fit the expected start on the detected fusion\nFusion is located outside gene exons. Fusion sequence is assembled using:")
            end(grl[[2]]) <- end(grl[[2]]) + extend
            cat(paste(as.character(seqnames(grl[[2]])), sep=":",paste(start(grl[[2]]), end(grl[[2]]),sep="-")),"\n")
