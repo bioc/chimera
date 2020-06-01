@@ -1,7 +1,7 @@
 Package: chimera
 Type: Package
 Title: A package for secondary analysis of fusion products
-Version: 1.31.0
+Version: 1.31.1
 Date: 31 March 2015
 Author: Raffaele A Calogero, Matteo Carrara, Marco Beccuti, Francesca Cordero 
 Maintainer: Raffaele A Calogero <raffaele.calogero@unito.it>
@@ -12,3 +12,4 @@ Description: This package facilitates the characterisation of fusion products ev
 biocViews: Infrastructure
 SystemRequirements: STAR, TopHat, bowtie and samtools are required for some functionalities 
 License: Artistic-2.0
+PackageStatus: Deprecated
